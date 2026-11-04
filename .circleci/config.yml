@@ -1,0 +1,35 @@
+version: 2.1
+
+functions:
+  node: github.com/circleci-functions/setup-node@v0.4.0
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - node:
+          with:
+            # No .nvmrc or engines field in the repo; pinned to the Node LTS
+            # the build was verified against.
+            node-version: "24"
+      - node/install-packages:
+          with:
+            package-manager: npm
+            # The repo has no lockfile, so `npm ci` can't be used.
+            override-command: npm install --no-audit --no-fund
+      - run:
+          name: Build
+          command: npm run build
+      - run:
+          name: Typecheck
+          command: npm run typecheck
+      - run:
+          name: Check formatting
+          command: npm run format:check
+
+workflows:
+  ci:
+    jobs:
+      - build
