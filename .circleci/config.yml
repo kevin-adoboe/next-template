@@ -1,0 +1,41 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - checkout
+      - node:
+          with:
+            # No .nvmrc or "engines" in the repo; Node 24 LTS is verified to work.
+            node-version: "24"
+      - node/install-packages:
+          with:
+            package-manager: npm
+            # No lockfile is committed, so `npm ci` can't run. Also pin
+            # eslint-plugin-tailwindcss to 3.17: 3.18.x can't resolve tailwindcss
+            # from the relative config path in .eslintrc.json and breaks `next lint`.
+            override-command: npm install --no-audit --no-fund --no-save eslint-plugin-tailwindcss@~3.17.0
+      - run:
+          name: Build
+          command: npm run build
+      - run:
+          name: Typecheck
+          command: npm run typecheck
+      - run:
+          name: Lint
+          command: npm run lint
+      - run:
+          name: Format check
+          command: npm run format:check
+
+workflows:
+  ci:
+    jobs:
+      - build
+
+functions:
+  node: github.com/circleci-functions/setup-node@v0.4.0
