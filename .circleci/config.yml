@@ -1,0 +1,41 @@
+version: 2.1
+
+# Starter pipeline for next-template (Next.js 13, npm).
+# The repo has no lockfile, so dependency caching is not set up yet:
+# commit a package-lock.json and add restore_cache/save_cache keyed on
+# {{ checksum "package-lock.json" }}.
+# The repo has no tests, so there is no test step or Smarter Testing suite yet.
+
+jobs:
+  build-and-lint:
+    docker:
+      - image: cimg/node:26.13
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install --no-audit --no-fund
+      - run:
+          # Workaround: with no lockfile, ^3.13.2 resolves to
+          # eslint-plugin-tailwindcss 3.18.3, which fails with
+          # "Could not resolve tailwindcss". 3.17.5 works. Remove this step
+          # once the version is pinned in package.json or a lockfile.
+          name: Pin eslint-plugin-tailwindcss to a working version
+          command: npm install --no-save --no-audit --no-fund eslint-plugin-tailwindcss@3.17.5
+      - run:
+          name: Build
+          command: npm run build
+      - run:
+          name: Lint
+          command: npm run lint
+      - run:
+          name: Typecheck
+          command: npm run typecheck
+      - run:
+          name: Check formatting
+          command: npm run format:check
+
+workflows:
+  ci:
+    jobs:
+      - build-and-lint
