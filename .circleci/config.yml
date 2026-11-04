@@ -1,0 +1,35 @@
+version: 2.1
+
+functions:
+  node: github.com/circleci-functions/setup-node@v0.4.0
+
+jobs:
+  build-and-lint:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      # The repo pins no Node version (.nvmrc / engines); Node 24 LTS builds it.
+      - node:
+          with:
+            node-version: "24"
+      # No lockfile is committed, so the default frozen `npm ci` would fail.
+      - node/install-packages:
+          with:
+            override-command: npm install --no-audit --no-fund
+      - run:
+          name: Build
+          command: npm run build
+      - run:
+          name: Typecheck
+          command: npm run typecheck
+      - run:
+          name: Check formatting
+          command: npm run format:check
+      # TODO: add `npm run lint` once eslint-plugin-tailwindcss is pinned below 3.18
+      # or a lockfile is committed; 3.18.x fails with "Could not resolve tailwindcss".
+
+workflows:
+  build:
+    jobs:
+      - build-and-lint
