@@ -1,0 +1,43 @@
+version: 2.1
+
+jobs:
+  build-and-lint:
+    docker:
+      - image: cimg/node:24.22
+    steps:
+      - checkout
+      # The repo has no lockfile, so the cache is keyed on package.json instead.
+      - restore_cache:
+          keys:
+            - npm-deps-v1-{{ checksum "package.json" }}
+            - npm-deps-v1-
+      - run:
+          name: Install dependencies
+          # Without a lockfile npm resolves the newest eslint-plugin-tailwindcss 3.x.
+          # 3.18.3+ can't resolve tailwindcss when the config path is relative
+          # ("Could not resolve tailwindcss"), so pin the last working release.
+          command: |
+            npm install --no-audit --no-fund
+            npm install --no-save --no-audit --no-fund eslint-plugin-tailwindcss@3.18.2
+      - save_cache:
+          key: npm-deps-v1-{{ checksum "package.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: Build
+          command: npm run build
+      # No test step: the project has no tests.
+      - run:
+          name: Lint
+          command: npm run lint
+      - run:
+          name: Typecheck
+          command: npm run typecheck
+      - run:
+          name: Format check
+          command: npm run format:check
+
+workflows:
+  build:
+    jobs:
+      - build-and-lint
